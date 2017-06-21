@@ -4,10 +4,10 @@
 # @Author  : zhangshilong
 # @Software: PyCharm Community Edition
 
-import requests
 from bs4 import BeautifulSoup
 import os
 import time
+from download import request
 
 
 class mzitu():
@@ -24,7 +24,7 @@ class mzitu():
             return False
 
     def all_url(self, all_url):
-        start_html = self.request_mzitu(all_url)
+        start_html = self.request_mzitu(all_url, 3)
         # print (start_html.text)
         Soup = BeautifulSoup(start_html.text, 'lxml')
         a_list = Soup.find('div', class_='all').find_all('a')
@@ -39,7 +39,7 @@ class mzitu():
             self.html(href)
 
     def html(self, href):
-        html = self.request_mzitu(href)
+        html = self.request_mzitu(href, 3)
         html_Soup = BeautifulSoup(html.text, 'lxml')
         max_span = html_Soup.find('div', class_='pagenavi').find_all('span')[-2].get_text()
 
@@ -49,22 +49,22 @@ class mzitu():
             self.image(page_url)
 
     def image(self, page_url):
-        image_html = self.request_mzitu(page_url)
+        image_html = self.request_mzitu(page_url, 3)
         image_Soup = BeautifulSoup(image_html.text, 'lxml')
         image_url = image_Soup.find('div', class_='main-image').find('img')['src']
         self.save(image_url)
 
     def save(self, image_url):
         name = image_url[-9:-4]
-        img = self.request_mzitu(image_url)
+        img = self.request_mzitu(image_url, 3)
         f = open(name + '.jpg', 'ab')
         f.write(img.content)
         f.close()
 
-    def request_mzitu(self, url):
+    def request_mzitu(self, url, timeout):
         headers = {
             'User-Agent': "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1"}
-        content = requests.get(url, headers=headers, timeout=10)
+        content = request.get(url, timeout=timeout)
         return content
 
 

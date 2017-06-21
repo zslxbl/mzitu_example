@@ -1,12 +1,19 @@
 import re
 import random
 import requests
+import time
 
 __description__ = u'随机获取User-Agent，构造requests'
 
 
 class download():
     def __init__(self):
+        self.ip_list = []
+        html = requests.get("http://haoip.cc/tiqu.htm")
+        ip_list_n = re.findall(r'r/>(.*?)<b', html.text, re.S)
+        for ip in ip_list_n:
+            i = re.sub('\n', "", ip)
+            self.ip_list.append(i.strip())
         self.user_agent_list = [
             "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1",
             "Mozilla/5.0 (X11; CrOS i686 2268.111.0) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11",
@@ -28,8 +35,27 @@ class download():
             "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24"
         ]
 
-    def get(self, url):
+    def get(self, url, timeout, proxy=None, num_retries=6):
         UA = random.choice(self.user_agent_list)
         headers = {'User-Agent': UA}
-        response = requests.get(url, headers=headers)
-        return response
+        if not proxy:
+            try:
+                return requests.get(url, headers=headers, tiemout=timeout)
+            except:
+                if num_retries >0 :
+                    time.sleep(10)
+                    print u'获取网页出错，10s后将获取倒数第：{}次'.format(num_retries)
+                    return self.get(url, timeout, num_retries-1)
+                else:
+                    print u'开始使用代理...'
+                    time.sleep(10)
+                    IP = ''.join(str(random.choice(self.ip_list)).strip())
+                    proxy = {'http': IP}
+                    return requests.get(url, headers=headers, proxies=proxy)
+        else:
+            IP = ''.join(str(random.choice(self.ip_list)).strip())
+            proxy = {'http': IP}
+            response = requests.get(url, headers=headers, proxies=proxy)
+            return response
+# print(Xz.get("mzitu.com").headers)
+request = download()
