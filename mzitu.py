@@ -8,9 +8,18 @@ from bs4 import BeautifulSoup
 import os
 import time
 from download import request
-
+from pymongo import MongoClient
+import datetime
 
 class mzitu():
+    def __int__(self):
+        client = MongoClient()
+        db = client['meinvxiezhenji']
+        self.meizitu_collection = db['meizitu']
+        self.title = ''
+        self.url = ''
+        self.img_url = []
+
     def mkdir(self, path):
         path = path.strip()
         is_exist = os.path.exists(os.path.join("E:\mzitu", path))
@@ -32,10 +41,14 @@ class mzitu():
         for a in a_list:
             # print a
             title = a.get_text()
+            self.title = title
             print u'开始保存{}...'.format(title)
             path = title.replace('?', '_')
             self.mkdir(path)
             href = a['href']
+            self.url = href
+            if self.meizitu_collection.find_one({'主题页面': href}):
+                print u'这个页面已经爬取过了'
             self.html(href)
 
     def html(self, href):
@@ -43,16 +56,29 @@ class mzitu():
         html_Soup = BeautifulSoup(html.text, 'lxml')
         max_span = html_Soup.find('div', class_='pagenavi').find_all('span')[-2].get_text()
 
+        page_num = 0
         for page in range(1, int(max_span) + 1):
+            page_num = page_num + 1
             page_url = href + '/' + str(page)
             time.sleep(0.6)
-            self.image(page_url)
+            self.image(page_url, max_span, page_num)
 
-    def image(self, page_url):
+    def image(self, page_url, max_span, page_num):
         image_html = self.request_mzitu(page_url, 3)
         image_Soup = BeautifulSoup(image_html.text, 'lxml')
         image_url = image_Soup.find('div', class_='main-image').find('img')['src']
-        self.save(image_url)
+        self.img_url.append(image_url)
+        if int(max_span) == page_num:
+            self.save(image_url)
+            post = {
+                '标题': self.title,
+                '主题页面':self.url,
+                '图片地址': self.img_url,
+                '获取时间':datetime.datetime.now()
+            }
+            self.meizitu_collection.save(post)
+        else:
+            self.save(image_url)
 
     def save(self, image_url):
         name = image_url[-9:-4]
