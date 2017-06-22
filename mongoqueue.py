@@ -79,4 +79,31 @@ class MogoQueue():
         )
         return record['_id']
 
+    def peek(self):
+        '''
+        这个函数是取出状态为OUTSTANDING的文档并返回_di(Url)
+        :return:
+        '''
+        record = self.db.find_one({'status': self.OUTSTANDING})
+        if record:
+            return record['_id']
 
+    def complate(self, url):
+        self.db.update(
+            {'_id': url},
+            {'$set': {'status': self.COMPLATE}}
+        )
+
+    def repar(self):
+        record = self.db.find_and_modify(
+            query={
+                'timestamp': {'$lt': datetime.now() - timedelta(seconds=self.timeout)},
+                'status': {'$ne': self.COMPLATE}
+            },
+            update={'$set': {'status':self.OUTSTANDING}}
+        )
+        if record:
+            print (u'重置url状态', record['_id'])
+
+    def clean(self):
+        self.db.drop()

@@ -10,6 +10,7 @@ import time
 from download import request
 from pymongo import MongoClient
 import datetime
+from mongoqueue import MogoQueue
 
 class mzitu():
     def __int__(self):
@@ -96,3 +97,16 @@ class mzitu():
 
 Mzitu = mzitu()
 Mzitu.all_url('http://www.mzitu.com/all')
+
+spider_queue = MogoQueue('meinvxiezhenji', 'craw_queue')
+def start(url):
+    response = request.get(url, 3)
+    Soup = BeautifulSoup(response.text, 'lxml')
+    all_a = Soup.find('div', class_='all').find_all('a')
+    for a in all_a:
+        title = a.get_text
+        url = a['href']
+        spider_queue.push(url, title)
+
+if __name__ == '__main__':
+    start('http://www.meizut.com/all')
